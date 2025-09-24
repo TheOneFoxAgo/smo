@@ -5,25 +5,28 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <queue>
 #include <ratio>
 #include <vector>
 
 namespace smo {
 using Time = std::chrono::duration<double, std::milli>;
-enum Result { success = 0, simulationEnded };
+enum class Result { success = 0, failure };
 struct Source {
-  std::size_t id;
   Time period;
   std::size_t generated;
   std::vector<Time> times_in_buffer;
   std::vector<Time> times_in_device;
 };
+struct Request {
+  std::size_t source_id;
+  Time last_interaction;
+};
 struct Device {
-  std::size_t id;
   Time processing_time;
   Time time_in_usage;
-  bool occupied;
+  std::optional<Request> request;
 };
 struct SourceReport {
   std::size_t generated_requests;
@@ -41,22 +44,22 @@ struct Report {
   std::vector<SourceReport> source_reports;
   std::vector<DeviceReport> device_reports;
 };
-struct Request {
-  std::size_t source_id;
-  Time last_interaction;
-};
-enum SpecialEventKind { generateNewRequest, freeDevice };
+enum class SpecialEventKind { generateNewRequest, deviceRelease };
 struct SpecialEvent {
   SpecialEventKind kind;
   Time planned_time;
   std::size_t id;
 };
 struct SpecialEventComparator {
-  bool operator()(SpecialEvent lhs, SpecialEvent rhs) const;
+  bool operator()(const SpecialEvent& lhs, const SpecialEvent& rhs) const;
 };
-using SpecialEventQueue =
-    std::priority_queue<SpecialEvent, std::vector<SpecialEvent>,
-                        SpecialEventComparator>;
+class SpecialEventQueue
+    : public std::priority_queue<SpecialEvent, std::vector<SpecialEvent>,
+                                 SpecialEventComparator> {
+ public:
+  void Clear();
+  void RemoveExcessGenerations();
+};
 }  // namespace smo
 
 #endif
