@@ -131,8 +131,9 @@ void smo::SimulatorBase::HandleNewRequestCreation(std::size_t source_id) {
   };
   current_amount_of_requests_ += 1;
   if (OccupyNextDevice(request) == Result::failure) {
-    if (PutInBuffer(request) == Result::failure) {
-      HandleBufferOverflow(request);
+    auto rejected_request = PutInBuffer(request);
+    if (rejected_request.has_value()) {
+      HandleBufferOverflow(*rejected_request);
     }
   }
 

@@ -33,7 +33,7 @@ class SimulatorBase {
   smo::Time full_simulation_time() const;
 
  protected:
-  virtual smo::Result PutInBuffer(Request request);
+  virtual std::optional<Request> PutInBuffer(Request request);
   virtual std::optional<Request> TakeOutOfBuffer();
   virtual std::optional<std::size_t> PickDevice();
   virtual smo::Time DeviceProcessingTime(std::size_t device_id);
