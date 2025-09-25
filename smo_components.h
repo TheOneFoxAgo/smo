@@ -14,23 +14,22 @@ namespace smo {
 using Time = std::chrono::duration<double, std::milli>;
 enum class Result { success = 0, failure };
 struct Source {
-  Time period;
   std::size_t generated;
   std::vector<Time> times_in_buffer;
   std::vector<Time> times_in_device;
 };
 struct Request {
   std::size_t source_id;
-  Time last_interaction;
+  std::size_t number;
+  Time generation_time;
 };
 struct Device {
-  Time processing_time;
   Time time_in_usage;
   std::optional<Request> request;
 };
 struct SourceReport {
   std::size_t generated_requests;
-  Time reject_probability;
+  double rejection_probability;
   Time average_buffer_time;
   Time average_processing_time;
   Time average_full_time;

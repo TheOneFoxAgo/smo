@@ -13,13 +13,10 @@
 namespace smo {
 class SimulatorBase {
  public:
-  SimulatorBase(std::vector<smo::Source> &&sources,
-                std::vector<smo::Device> &&devices,
-                std::vector<smo::Request> &&buffer,
+  SimulatorBase(std::size_t sources_amount, std::size_t devices_amount,
                 std::size_t target_amount_of_requests)
-      : sources_(sources),
-        devices_(devices),
-        buffer_(buffer),
+      : sources_(std::vector<smo::Source>(sources_amount)),
+        devices_(std::vector<smo::Device>(devices_amount)),
         current_amount_of_requests_(0),
         target_amount_of_requests_(target_amount_of_requests) {
     Init();
@@ -36,16 +33,20 @@ class SimulatorBase {
   smo::Time full_simulation_time() const;
 
  protected:
-  virtual void HandleBufferOverflow(Request request);
   virtual smo::Result PutInBuffer(Request request);
   virtual std::optional<Request> TakeOutOfBuffer();
   virtual std::optional<std::size_t> PickDevice();
+  virtual smo::Time DeviceProcessingTime(std::size_t device_id);
+  virtual smo::Time SourcePeriod(std::size_t source_id);
 
   std::vector<smo::Source> sources_;
   std::vector<smo::Device> devices_;
-  std::vector<smo::Request> buffer_;
+  std::size_t current_amount_of_requests_;
+  std::size_t target_amount_of_requests_;
+  smo::Time current_simulation_time_;
 
  private:
+  void HandleBufferOverflow(Request request);
   void HandleNewRequestCreation(std::size_t source_id);
   void HandleDeviceRelease(std::size_t device_id);
   smo::Result OccupyNextDevice(Request request);
@@ -53,9 +54,6 @@ class SimulatorBase {
   void UncheckedStep();
 
   smo::SpecialEventQueue special_events_;
-  std::size_t current_amount_of_requests_;
-  std::size_t target_amount_of_requests_;
-  smo::Time full_simulation_time_;
 };
 }  // namespace smo
 #endif
