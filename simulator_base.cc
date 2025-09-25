@@ -111,13 +111,17 @@ bool smo::SimulatorBase::is_completed() const {
   return special_events_.empty();
 }
 
+const std::optional<smo::Request>& smo::SimulatorBase::device_request(
+    std::size_t device_id) const {
+  return devices_[device_id].request;
+}
 std::size_t smo::SimulatorBase::current_amount_of_requests() const {
   return current_amount_of_requests_;
 }
 std::size_t smo::SimulatorBase::target_amount_of_requests() const {
   return target_amount_of_requests_;
 }
-smo::Time smo::SimulatorBase::full_simulation_time() const {
+smo::Time smo::SimulatorBase::current_simulation_time() const {
   return current_simulation_time_;
 }
 
@@ -136,6 +140,7 @@ void smo::SimulatorBase::HandleNewRequestCreation(std::size_t source_id) {
       HandleBufferOverflow(*rejected_request);
     }
   }
+  OnNewRequestCreation(request);
 
   if (current_amount_of_requests_ >= target_amount_of_requests_) {
     special_events_.RemoveExcessGenerations();
@@ -148,7 +153,7 @@ void smo::SimulatorBase::HandleNewRequestCreation(std::size_t source_id) {
   }
 }
 
-void smo::SimulatorBase::HandleBufferOverflow(smo::Request request) {
+void smo::SimulatorBase::HandleBufferOverflow(const smo::Request& request) {
   sources_[request.source_id].times_in_buffer.push_back(
       current_simulation_time_ - request.generation_time);
 }
@@ -162,6 +167,7 @@ void smo::SimulatorBase::HandleDeviceRelease(std::size_t device_id) {
         current_simulation_time_ - request->generation_time);
     OccupyNextDevice(*request);
   }
+  OnDeviceRelease(device_id);
 }
 smo::Result smo::SimulatorBase::OccupyNextDevice(smo::Request request) {
   auto device_id = PickDevice();
@@ -187,3 +193,5 @@ void smo::SimulatorBase::Init() {
         SpecialEvent{SpecialEventKind::generateNewRequest, SourcePeriod(i), i});
   }
 }
+void smo::SimulatorBase::OnNewRequestCreation(const Request& request) {}
+void smo::SimulatorBase::OnDeviceRelease(std::size_t device_id) {}
