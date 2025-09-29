@@ -62,12 +62,14 @@ struct SpecialEvent {
 struct SpecialEventComparator {
   bool operator()(const SpecialEvent& lhs, const SpecialEvent& rhs) const;
 };
-class SpecialEventQueue
+// Breaking the Google naming scheme,
+// because it's an extension of std collection.
+class special_event_queue
     : public std::priority_queue<SpecialEvent, std::vector<SpecialEvent>,
                                  SpecialEventComparator> {
  public:
-  void Clear();
-  void RemoveExcessGenerations();
+  void clear();
+  void remove_excess_generations();
 };
 }  // namespace smo
 

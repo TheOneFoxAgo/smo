@@ -57,7 +57,7 @@ class SimulatorBase {
   std::size_t current_amount_of_requests_;
   std::size_t target_amount_of_requests_;
   Time current_simulation_time_;
-  SpecialEventQueue special_events_;
+  special_event_queue special_events_;
   std::vector<SourceStatistics> sources_;
   std::vector<DeviceStatistics> devices_;
 };

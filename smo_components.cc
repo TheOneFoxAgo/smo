@@ -36,9 +36,9 @@ bool smo::SpecialEventComparator::operator()(const SpecialEvent& lhs,
   return lhs.planned_time > rhs.planned_time;
 }
 
-void smo::SpecialEventQueue::Clear() { this->c.clear(); }
+void smo::special_event_queue::clear() { this->c.clear(); }
 
-void smo::SpecialEventQueue::RemoveExcessGenerations() {
+void smo::special_event_queue::remove_excess_generations() {
   auto new_end =
       std::remove_if(this->c.begin(), this->c.end(), [](SpecialEvent event) {
         return event.kind == SpecialEventKind::generateNewRequest;

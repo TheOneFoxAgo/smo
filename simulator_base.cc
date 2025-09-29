@@ -94,7 +94,7 @@ void smo::SimulatorBase::Reset() {
     d.current_request = std::nullopt;
     d.time_in_usage = Time(0);
   }
-  special_events_.Clear();
+  special_events_.clear();
   current_amount_of_requests_ = 0;
   current_simulation_time_ = Time(0);
   Init();
@@ -141,7 +141,7 @@ void smo::SimulatorBase::HandleNewRequestCreation(std::size_t source_id) {
   OnNewRequestCreation(request);
 
   if (current_amount_of_requests_ >= target_amount_of_requests_) {
-    special_events_.RemoveExcessGenerations();
+    special_events_.remove_excess_generations();
   } else {
     special_events_.push(SpecialEvent{
         SpecialEventKind::generateNewRequest,
@@ -192,6 +192,9 @@ void smo::SimulatorBase::Init() {
     special_events_.push(
         SpecialEvent{SpecialEventKind::generateNewRequest, SourcePeriod(i), i});
   }
+}
+void smo::SimulatorBase::AddSpecialEvent(smo::SpecialEvent event) {
+  special_events_.push(event);
 }
 void smo::SimulatorBase::OnNewRequestCreation(const Request& request) {}
 void smo::SimulatorBase::OnDeviceRelease(std::size_t device_id) {}
