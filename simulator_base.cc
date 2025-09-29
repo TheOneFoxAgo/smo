@@ -64,18 +64,13 @@ smo::Report smo::SimulatorBase::GenerateReport() const {
     auto& source = sources_[i];
     auto& source_report = report.source_reports[i];
     source_report.rejection_probability =
-        1.0 -
-        static_cast<double>(source.times_in_device.size()) / source.generated;
-    source_report.average_buffer_time =
-        CalculateAverage(source.times_in_buffer, source.generated);
-    source_report.average_processing_time =
-        CalculateAverage(source.times_in_device, source.generated);
+        static_cast<double>(source.rejected) / source.generated;
+    source_report.average_buffer_time = source.AverageBufferTime();
+    source_report.average_processing_time = source.AverageDeviceTime();
     source_report.average_full_time = source_report.average_buffer_time +
                                       source_report.average_processing_time;
-    source_report.buffer_time_variance = CalculateVariance(
-        source.times_in_buffer, source_report.average_buffer_time);
-    source_report.processing_time_variance = CalculateVariance(
-        source.times_in_device, source_report.average_processing_time);
+    source_report.buffer_time_variance = source.BufferTimeVariance();
+    source_report.processing_time_variance = source.DeviceTimeVariance();
   }
   for (size_t i = 0; i < devices_.size(); ++i) {
     auto& device = devices_[i];
@@ -89,11 +84,14 @@ smo::Report smo::SimulatorBase::GenerateReport() const {
 void smo::SimulatorBase::Reset() {
   for (auto& s : sources_) {
     s.generated = 0;
-    s.times_in_buffer.clear();
-    s.times_in_device.clear();
+    s.rejected = 0;
+    s.time_in_device = Time(0);
+    s.time_squared_in_device = 0;
+    s.time_in_buffer = Time(0);
+    s.time_squared_in_buffer = 0;
   }
   for (auto& d : devices_) {
-    d.request = std::nullopt;
+    d.current_request = std::nullopt;
     d.time_in_usage = Time(0);
   }
   special_events_.Clear();
@@ -113,7 +111,7 @@ bool smo::SimulatorBase::is_completed() const {
 
 const std::optional<smo::Request>& smo::SimulatorBase::device_request(
     std::size_t device_id) const {
-  return devices_[device_id].request;
+  return devices_[device_id].current_request;
 }
 std::size_t smo::SimulatorBase::current_amount_of_requests() const {
   return current_amount_of_requests_;
@@ -154,17 +152,19 @@ void smo::SimulatorBase::HandleNewRequestCreation(std::size_t source_id) {
 }
 
 void smo::SimulatorBase::HandleBufferOverflow(const smo::Request& request) {
-  sources_[request.source_id].times_in_buffer.push_back(
-      current_simulation_time_ - request.generation_time);
+  auto time = current_simulation_time_ - request.generation_time;
+  auto& source = sources_[request.source_id];
+  source.AddTimeInBuffer(time);
+  source.rejected += 1;
 }
 
 void smo::SimulatorBase::HandleDeviceRelease(std::size_t device_id) {
   auto& device = devices_[device_id];
-  device.request = std::nullopt;
+  device.current_request = std::nullopt;
   auto request = TakeOutOfBuffer();
   if (request.has_value()) {
-    sources_[request->source_id].times_in_buffer.push_back(
-        current_simulation_time_ - request->generation_time);
+    auto time = current_simulation_time_ - request->generation_time;
+    sources_[request->source_id].AddTimeInBuffer(time);
     OccupyNextDevice(*request);
   }
   OnDeviceRelease(device_id);
@@ -173,9 +173,9 @@ smo::Result smo::SimulatorBase::OccupyNextDevice(smo::Request request) {
   auto device_id = PickDevice();
   if (device_id.has_value()) {
     auto& device = devices_[*device_id];
-    auto processing_time = DeviceProcessingTime(*device_id);
-    sources_[request.source_id].times_in_device.push_back(processing_time);
-    device.request = request;
+    auto processing_time = DeviceProcessingTime(*device_id, request);
+    sources_[request.source_id].AddTimeInDevice(processing_time);
+    device.current_request = request;
     special_events_.push(SpecialEvent{
         SpecialEventKind::deviceRelease,
         current_simulation_time_ + processing_time,

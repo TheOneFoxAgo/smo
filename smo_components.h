@@ -13,19 +13,29 @@
 namespace smo {
 using Time = std::chrono::duration<double, std::milli>;
 enum class Result { success = 0, failure };
-struct Source {
+struct SourceStatistics {
+  Time AverageBufferTime() const;
+  Time AverageDeviceTime() const;
+  Time::rep BufferTimeVariance() const;
+  Time::rep DeviceTimeVariance() const;
+  void AddTimeInBuffer(Time time);
+  void AddTimeInDevice(Time time);
+
   std::size_t generated;
-  std::vector<Time> times_in_buffer;
-  std::vector<Time> times_in_device;
+  std::size_t rejected;
+  Time time_in_buffer;
+  Time time_in_device;
+  Time::rep time_squared_in_buffer;
+  Time::rep time_squared_in_device;
 };
 struct Request {
   std::size_t source_id;
   std::size_t number;
   Time generation_time;
 };
-struct Device {
+struct DeviceStatistics {
   Time time_in_usage;
-  std::optional<Request> request;
+  std::optional<Request> current_request;
 };
 struct SourceReport {
   std::size_t generated_requests;
@@ -33,8 +43,8 @@ struct SourceReport {
   Time average_buffer_time;
   Time average_processing_time;
   Time average_full_time;
-  Time buffer_time_variance;
-  Time processing_time_variance;
+  Time::rep buffer_time_variance;
+  Time::rep processing_time_variance;
 };
 struct DeviceReport {
   double usage_coefficient;

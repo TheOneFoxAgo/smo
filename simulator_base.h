@@ -15,8 +15,8 @@ class SimulatorBase {
  public:
   SimulatorBase(std::size_t sources_amount, std::size_t devices_amount,
                 std::size_t target_amount_of_requests)
-      : sources_(std::vector<Source>(sources_amount)),
-        devices_(std::vector<Device>(devices_amount)),
+      : sources_(std::vector<SourceStatistics>(sources_amount)),
+        devices_(std::vector<DeviceStatistics>(devices_amount)),
         current_amount_of_requests_(0),
         target_amount_of_requests_(target_amount_of_requests) {
     Init();
@@ -32,31 +32,34 @@ class SimulatorBase {
   std::size_t current_amount_of_requests() const;
   std::size_t target_amount_of_requests() const;
   Time current_simulation_time() const;
+  const SourceStatistics& source_statistics(std::size_t source_id) const;
+  const DeviceStatistics& device_statistics(std::size_t device_id) const;
 
  protected:
   void OnNewRequestCreation(const Request& request);
   void OnDeviceRelease(std::size_t device_id);
+  void AddSpecialEvent(SpecialEvent event);
+  void Init();
   virtual std::optional<Request> PutInBuffer(Request request) = 0;
   virtual std::optional<Request> TakeOutOfBuffer() = 0;
   virtual std::optional<std::size_t> PickDevice() = 0;
-  virtual Time DeviceProcessingTime(std::size_t device_id) = 0;
+  virtual Time DeviceProcessingTime(std::size_t device_id,
+                                    const Request& request) = 0;
   virtual Time SourcePeriod(std::size_t source_id) = 0;
-
-  std::vector<Source> sources_;
-  std::vector<Device> devices_;
 
  private:
   void HandleBufferOverflow(const Request& request);
   void HandleNewRequestCreation(std::size_t source_id);
   void HandleDeviceRelease(std::size_t device_id);
   Result OccupyNextDevice(Request request);
-  void Init();
   void UncheckedStep();
 
   std::size_t current_amount_of_requests_;
   std::size_t target_amount_of_requests_;
   Time current_simulation_time_;
   SpecialEventQueue special_events_;
+  std::vector<SourceStatistics> sources_;
+  std::vector<DeviceStatistics> devices_;
 };
 }  // namespace smo
 #endif
