@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <iosfwd>
 #include <optional>
 #include <queue>
 #include <vector>
@@ -18,17 +19,17 @@ class SimulatorBase {
       : sources_(std::vector<SourceStatistics>(sources_amount)),
         devices_(std::vector<DeviceStatistics>(devices_amount)),
         current_amount_of_requests_(0),
-        target_amount_of_requests_(target_amount_of_requests) {
-    Init();
-  }
+        target_amount_of_requests_(target_amount_of_requests) {}
+  virtual ~SimulatorBase() = default;
+
   Result Step();
   Result RunToCompletion(std::size_t target_amount_of_requests);
   Report GenerateReport() const;
-  void Reset();
-  void Reset(std::size_t target_amount_of_requests);
+  virtual void Reset();
+  virtual void Reset(std::size_t target_amount_of_requests);
+  const std::ostream& PrintCalendar(std::ostream& out) const;
 
   bool is_completed() const;
-  const std::optional<Request>& device_request(std::size_t device_id) const;
   std::size_t current_amount_of_requests() const;
   std::size_t target_amount_of_requests() const;
   Time current_simulation_time() const;
@@ -36,10 +37,11 @@ class SimulatorBase {
   const DeviceStatistics& device_statistics(std::size_t device_id) const;
 
  protected:
-  void OnNewRequestCreation(const Request& request);
-  void OnDeviceRelease(std::size_t device_id);
   void AddSpecialEvent(SpecialEvent event);
-  void Init();
+
+  virtual void OnNewRequestCreation(const Request& request);
+  virtual void OnDeviceRelease(std::size_t device_id);
+
   virtual std::optional<Request> PutInBuffer(Request request) = 0;
   virtual std::optional<Request> TakeOutOfBuffer() = 0;
   virtual std::optional<std::size_t> PickDevice() = 0;

@@ -1,6 +1,11 @@
+#include <bits/chrono.h>
+
 #include <chrono>
 #include <cstddef>
+#include <format>
+#include <iterator>
 #include <optional>
+#include <ostream>
 #include <vector>
 
 #include "simulator_base.h"
@@ -97,7 +102,6 @@ void smo::SimulatorBase::Reset() {
   special_events_.clear();
   current_amount_of_requests_ = 0;
   current_simulation_time_ = Time(0);
-  Init();
 }
 
 void smo::SimulatorBase::Reset(std::size_t target_amount_of_requests) {
@@ -109,10 +113,6 @@ bool smo::SimulatorBase::is_completed() const {
   return special_events_.empty();
 }
 
-const std::optional<smo::Request>& smo::SimulatorBase::device_request(
-    std::size_t device_id) const {
-  return devices_[device_id].current_request;
-}
 std::size_t smo::SimulatorBase::current_amount_of_requests() const {
   return current_amount_of_requests_;
 }
@@ -138,17 +138,20 @@ void smo::SimulatorBase::HandleNewRequestCreation(std::size_t source_id) {
       HandleBufferOverflow(*rejected_request);
     }
   }
-  OnNewRequestCreation(request);
 
   if (current_amount_of_requests_ >= target_amount_of_requests_) {
     special_events_.remove_excess_generations();
+    for (auto& source : sources_) {
+      source.next_request = Time::max();
+    }
   } else {
-    special_events_.push(SpecialEvent{
+    AddSpecialEvent(SpecialEvent{
         SpecialEventKind::generateNewRequest,
         current_simulation_time_ + SourcePeriod(source_id),
         source_id,
     });
   }
+  OnNewRequestCreation(request);
 }
 
 void smo::SimulatorBase::HandleBufferOverflow(const smo::Request& request) {
@@ -166,6 +169,8 @@ void smo::SimulatorBase::HandleDeviceRelease(std::size_t device_id) {
     auto time = current_simulation_time_ - request->generation_time;
     sources_[request->source_id].AddTimeInBuffer(time);
     OccupyNextDevice(*request);
+  } else {
+    device.next_request = Time::max();
   }
   OnDeviceRelease(device_id);
 }
@@ -176,7 +181,7 @@ smo::Result smo::SimulatorBase::OccupyNextDevice(smo::Request request) {
     auto processing_time = DeviceProcessingTime(*device_id, request);
     sources_[request.source_id].AddTimeInDevice(processing_time);
     device.current_request = request;
-    special_events_.push(SpecialEvent{
+    AddSpecialEvent(SpecialEvent{
         SpecialEventKind::deviceRelease,
         current_simulation_time_ + processing_time,
         *device_id,
@@ -186,15 +191,84 @@ smo::Result smo::SimulatorBase::OccupyNextDevice(smo::Request request) {
     return Result::failure;
   }
 }
-void smo::SimulatorBase::Init() {
-  for (size_t i = 0; i < sources_.size(); ++i) {
-    auto& source = sources_[i];
-    special_events_.push(
-        SpecialEvent{SpecialEventKind::generateNewRequest, SourcePeriod(i), i});
-  }
-}
 void smo::SimulatorBase::AddSpecialEvent(smo::SpecialEvent event) {
+  switch (event.kind) {
+    case SpecialEventKind::generateNewRequest:
+      sources_[event.id].next_request = event.planned_time;
+      break;
+    case SpecialEventKind::deviceRelease:
+      devices_[event.id].next_request = event.planned_time;
+      break;
+  }
   special_events_.push(event);
 }
 void smo::SimulatorBase::OnNewRequestCreation(const Request& request) {}
 void smo::SimulatorBase::OnDeviceRelease(std::size_t device_id) {}
+
+static std::string format_date(smo::Time time) {
+  if (time == smo::Time::max()) {
+    return "Invalid";
+  }
+  std::string result;
+  auto days = std::chrono::duration_cast<std::chrono::days>(time);
+  time -= days;
+  auto hours = std::chrono::duration_cast<std::chrono::hours>(time);
+  time -= hours;
+  auto minutes = std::chrono::duration_cast<std::chrono::minutes>(time);
+  time -= minutes;
+  auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time);
+  time -= seconds;
+  auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(time);
+  time -= millis;
+  auto micros = std::chrono::duration_cast<std::chrono::microseconds>(time);
+  time -= micros;
+  auto AddToResult = [&](long long time, const char* postfix) {
+    if (time != 0) {
+      std::format_to(std::back_inserter(result), "{}{} ", time, postfix);
+    }
+  };
+  AddToResult(days.count(), "d");
+  AddToResult(hours.count(), "h");
+  AddToResult(minutes.count(), "m");
+  AddToResult(seconds.count(), "s");
+  AddToResult(millis.count(), "ms");
+  AddToResult(micros.count(), "us");
+  if (result.empty()) {
+    result += '0';
+  } else {
+    result.pop_back();
+  }
+  return result;
+}
+const std::ostream& smo::SimulatorBase::PrintCalendar(std::ostream& out) const {
+  const auto indexWidth = 10;
+  const auto nextWidth = 25;
+  const auto signWidth = 6;
+  using ItOut = std::ostream_iterator<char>;
+  std::format_to(ItOut(out), "{:<{}} | {:<{}} | {:<{}} | {:<{}}\n",
+                 "index:", indexWidth, "next:", nextWidth, "sign:", signWidth,
+                 "request:", 2 * indexWidth + 1);
+  auto PrintRow = [&](int i, Time next) {
+    std::format_to(ItOut(out), "{:>{}} | {:>{}} | {:>{}}", i, indexWidth, next,
+                   nextWidth, next == Time::max() ? 1 : 0, signWidth);
+  };
+  out << "Sources:\n";
+  for (int i = 0; i < sources_.size(); ++i) {
+    PrintRow(i, sources_[i].next_request);
+    out << '\n';
+  }
+  auto PrintRequest = [&](const std::optional<Request>& req) {
+    if (req.has_value()) {
+      std::format_to(ItOut(out), " | {:>{}}:{:<{}}", req->source_id, indexWidth,
+                     req->number, indexWidth);
+    } else {
+      std::format_to(ItOut(out), " | {:>{}}", "Free", 2 * indexWidth + 1);
+    }
+  };
+  out << "Devices:\n";
+  for (int i = 0; i < sources_.size(); ++i) {
+    PrintRow(i, devices_[i].next_request);
+    PrintRequest(devices_[i].current_request);
+  }
+  return out;
+}

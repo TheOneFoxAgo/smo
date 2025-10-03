@@ -23,6 +23,7 @@ struct SourceStatistics {
 
   std::size_t generated;
   std::size_t rejected;
+  Time next_request;
   Time time_in_buffer;
   Time time_in_device;
   Time::rep time_squared_in_buffer;
@@ -34,6 +35,7 @@ struct Request {
   Time generation_time;
 };
 struct DeviceStatistics {
+  Time next_request;
   Time time_in_usage;
   std::optional<Request> current_request;
 };
