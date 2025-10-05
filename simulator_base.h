@@ -22,13 +22,10 @@ class SimulatorBase {
         target_amount_of_requests_(target_amount_of_requests) {}
   virtual ~SimulatorBase() = default;
 
-  Result Step();
-  Result RunToCompletion(std::size_t target_amount_of_requests);
-  Report GenerateReport() const;
+  SpecialEvent Step();
+  void RunToCompletion(std::size_t target_amount_of_requests);
   virtual void Reset();
   virtual void Reset(std::size_t target_amount_of_requests);
-  const std::ostream& PrintCalendar(std::ostream& out) const;
-
   bool is_completed() const;
   std::size_t current_amount_of_requests() const;
   std::size_t target_amount_of_requests() const;
@@ -38,9 +35,6 @@ class SimulatorBase {
 
  protected:
   void AddSpecialEvent(SpecialEvent event);
-
-  virtual void OnNewRequestCreation(const Request& request);
-  virtual void OnDeviceRelease(std::size_t device_id);
 
   virtual std::optional<Request> PutInBuffer(Request request) = 0;
   virtual std::optional<Request> TakeOutOfBuffer() = 0;
@@ -53,8 +47,8 @@ class SimulatorBase {
   void HandleBufferOverflow(const Request& request);
   void HandleNewRequestCreation(std::size_t source_id);
   void HandleDeviceRelease(std::size_t device_id);
-  Result OccupyNextDevice(Request request);
-  void UncheckedStep();
+  bool OccupyNextDevice(Request request);
+  SpecialEvent UncheckedStep();
 
   std::size_t current_amount_of_requests_;
   std::size_t target_amount_of_requests_;

@@ -33,7 +33,18 @@ void smo::SourceStatistics::AddTimeInDevice(smo::Time time) {
 }
 bool smo::SpecialEventComparator::operator()(const SpecialEvent& lhs,
                                              const SpecialEvent& rhs) const {
-  return lhs.planned_time > rhs.planned_time;
+  if (lhs.kind == SpecialEventKind::endOfSimulation) {
+    return true;
+  }
+  if (rhs.kind == SpecialEventKind::endOfSimulation) {
+    return false;
+  }
+  if (lhs.kind == SpecialEventKind::generateNewRequest &&
+      rhs.kind == SpecialEventKind::deviceRelease) {
+    return lhs.planned_time >= rhs.planned_time;
+  } else {
+    return lhs.planned_time > rhs.planned_time;
+  }
 }
 
 void smo::special_event_queue::clear() { this->c.clear(); }

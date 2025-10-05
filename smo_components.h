@@ -7,12 +7,11 @@
 #include <functional>
 #include <optional>
 #include <queue>
-#include <ratio>
+#include <string>
 #include <vector>
 
 namespace smo {
-using Time = std::chrono::duration<double, std::milli>;
-enum class Result { success = 0, failure };
+using Time = std::chrono::duration<double>;
 struct SourceStatistics {
   Time AverageBufferTime() const;
   Time AverageDeviceTime() const;
@@ -39,23 +38,11 @@ struct DeviceStatistics {
   Time time_in_usage;
   std::optional<Request> current_request;
 };
-struct SourceReport {
-  std::size_t generated_requests;
-  double rejection_probability;
-  Time average_buffer_time;
-  Time average_processing_time;
-  Time average_full_time;
-  Time::rep buffer_time_variance;
-  Time::rep processing_time_variance;
+enum class SpecialEventKind {
+  generateNewRequest,
+  deviceRelease,
+  endOfSimulation
 };
-struct DeviceReport {
-  double usage_coefficient;
-};
-struct Report {
-  std::vector<SourceReport> source_reports;
-  std::vector<DeviceReport> device_reports;
-};
-enum class SpecialEventKind { generateNewRequest, deviceRelease };
 struct SpecialEvent {
   SpecialEventKind kind;
   Time planned_time;
