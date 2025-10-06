@@ -30,8 +30,8 @@ class SimulatorBase {
   std::size_t current_amount_of_requests() const;
   std::size_t target_amount_of_requests() const;
   Time current_simulation_time() const;
-  const SourceStatistics& source_statistics(std::size_t source_id) const;
-  const DeviceStatistics& device_statistics(std::size_t device_id) const;
+  const std::vector<SourceStatistics>& source_statistics() const;
+  const std::vector<DeviceStatistics>& device_statistics() const;
 
  protected:
   void AddSpecialEvent(SpecialEvent event);

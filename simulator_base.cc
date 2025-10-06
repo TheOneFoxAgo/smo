@@ -96,6 +96,14 @@ std::size_t smo::SimulatorBase::target_amount_of_requests() const {
 smo::Time smo::SimulatorBase::current_simulation_time() const {
   return current_simulation_time_;
 }
+const std::vector<smo::SourceStatistics>&
+smo::SimulatorBase::source_statistics() const {
+  return sources_;
+}
+const std::vector<smo::DeviceStatistics>&
+smo::SimulatorBase::device_statistics() const {
+  return devices_;
+}
 
 void smo::SimulatorBase::HandleNewRequestCreation(std::size_t source_id) {
   auto& source = sources_[source_id];
