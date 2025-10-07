@@ -19,7 +19,7 @@ class SimulatorBase {
   virtual ~SimulatorBase() = default;
 
   SpecialEvent Step();
-  void RunToCompletion(std::size_t target_amount_of_requests);
+  void RunToCompletion();
   virtual void Reset();
   virtual void Reset(std::size_t target_amount_of_requests);
   bool is_completed() const;

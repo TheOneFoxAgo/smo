@@ -40,7 +40,7 @@ smo::SpecialEvent smo::SimulatorBase::Step() {
   return UncheckedStep();
 }
 
-void smo::SimulatorBase::RunToCompletion(size_t target_amount_of_requests) {
+void smo::SimulatorBase::RunToCompletion() {
   if (is_completed()) {
     return;
   }
