@@ -29,7 +29,8 @@ void smo::Simulator::Reset() {
   }
 }
 std::vector<smo::Request> smo::Simulator::FakeBuffer() const {
-  std::vector<Request> result(buffer_capacity_);
+  std::vector<Request> result;
+  result.reserve(buffer_capacity_);
   auto begin = result.begin();
   for (const auto& subbuffer : storage_) {
     begin = std::copy(subbuffer.begin(), subbuffer.end(), begin);
@@ -43,6 +44,11 @@ std::vector<smo::Request> smo::Simulator::FakeBuffer() const {
               }
             });
   return result;
+}
+
+const std::vector<std::deque<smo::Request>>& smo::Simulator::RealBuffer()
+    const {
+  return storage_;
 }
 
 std::optional<smo::Request> smo::Simulator::PutInBuffer(Request request) {

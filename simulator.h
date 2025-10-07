@@ -1,6 +1,8 @@
 #ifndef SIMULATOR_H_
 #define SIMULATOR_H_
+#include <deque>
 #include <random>
+#include <vector>
 
 #include "simulator_base.h"
 #include "simulator_config.h"
@@ -16,20 +18,21 @@ class Simulator final : public smo::SimulatorBase {
 
   void Reset() override;
   std::vector<smo::Request> FakeBuffer() const;
+  const std::vector<std::deque<Request>>& RealBuffer() const;
 
  protected:
-  std::optional<smo::Request> PutInBuffer(smo::Request request) override;
-  std::optional<smo::Request> TakeOutOfBuffer() override;
+  std::optional<Request> PutInBuffer(Request request) override;
+  std::optional<Request> TakeOutOfBuffer() override;
   std::optional<std::size_t> PickDevice() override;
-  smo::Time DeviceProcessingTime(std::size_t device_id,
-                                 const smo::Request& request) override;
+  Time DeviceProcessingTime(std::size_t device_id,
+                            const Request& request) override;
   smo::Time SourcePeriod(std::size_t source_id) override;
 
  private:
   std::mt19937 random_gen_;
   std::vector<std::chrono::milliseconds> source_periods_;
   std::vector<std::exponential_distribution<>> device_distributions_;
-  std::vector<std::deque<smo::Request>> storage_;
+  std::vector<std::deque<Request>> storage_;
   std::size_t buffer_capacity_;
   std::size_t buffer_size_;
   std::size_t current_packet_;
