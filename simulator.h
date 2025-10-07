@@ -11,20 +11,8 @@ class Simulator final : public smo::SimulatorBase {
  public:
   Simulator(std::vector<std::chrono::milliseconds> source_periods,
             std::vector<std::exponential_distribution<>> device_distributions,
-            std::size_t buffer_capacity, std::size_t target_amount_of_requests)
-      : smo::SimulatorBase{source_periods.size(), device_distributions.size(),
-                           target_amount_of_requests},
-        random_gen_(std::mt19937(std::random_device{}())),
-        source_periods_(std::move(source_periods)),
-        device_distributions_(std::move(device_distributions)),
-        buffer_capacity_(buffer_capacity),
-        storage_(std::vector<std::deque<smo::Request>>(source_periods.size())) {
-  }
-  Simulator(SimulatorConfig config)
-      : smo::Simulator{std::move(config.source_periods),
-                       std::move(config.device_distributions),
-                       config.buffer_capacity,
-                       config.target_amount_of_requests} {}
+            std::size_t buffer_capacity, std::size_t target_amount_of_requests);
+  Simulator(SimulatorConfig config);
 
   void Reset() override;
   std::vector<smo::Request> FakeBuffer() const;
