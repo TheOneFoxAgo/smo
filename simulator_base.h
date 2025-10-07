@@ -15,11 +15,7 @@ namespace smo {
 class SimulatorBase {
  public:
   SimulatorBase(std::size_t sources_amount, std::size_t devices_amount,
-                std::size_t target_amount_of_requests)
-      : sources_(std::vector<SourceStatistics>(sources_amount)),
-        devices_(std::vector<DeviceStatistics>(devices_amount)),
-        current_amount_of_requests_(0),
-        target_amount_of_requests_(target_amount_of_requests) {}
+                std::size_t target_amount_of_requests);
   virtual ~SimulatorBase() = default;
 
   SpecialEvent Step();

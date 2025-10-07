@@ -8,6 +8,13 @@
 #include "simulator_base.h"
 #include "smo_components.h"
 
+smo::SimulatorBase::SimulatorBase(std::size_t sources_amount,
+                                  std::size_t devices_amount,
+                                  std::size_t target_amount_of_requests)
+    : sources_(std::vector<SourceStatistics>(sources_amount)),
+      devices_(std::vector<DeviceStatistics>(devices_amount)),
+      current_amount_of_requests_(0),
+      target_amount_of_requests_(target_amount_of_requests) {}
 // If simulation is completed, UB is triggered
 smo::SpecialEvent smo::SimulatorBase::UncheckedStep() {
   SpecialEvent current_event = special_events_.top();
