@@ -20,10 +20,13 @@ void PrintSourceCalendar(std::ostream& out, const smo::Simulator& simulator);
 void PrintDeviceCalendar(std::ostream& out, const smo::Simulator& simulator);
 void PrintFakeBuffer(std::ostream& out, const smo::Simulator& simulator);
 void PrintRealBuffer(std::ostream& out, const smo::Simulator& simulator);
+
+double CalculateNextTargetAmountOfRequests(double rejection_probability);
 int main(int argc, char** argv) {
   parse::Arguments args;
   auto parse_result = args.Parse(argc, argv);
   if (parse_result) {
+    PrintUsage(std::cerr);
     return parse_result;
   }
   smo::SimulatorConfig config;
@@ -38,8 +41,13 @@ int main(int argc, char** argv) {
       break;
     case parse::SimulationMode::interactive:
       break;
-    case parse::SimulationMode::automatic:
-      break;
+    case parse::SimulationMode::automatic: {
+      auto target_amount_of_requests = 0;
+      while (target_amount_of_requests !=
+             simulator.target_amount_of_requests()) {
+        simulator.RunToCompletion();
+      }
+    }
   }
   if (args.need_output) {
     if (args.reportFile.has_value()) {
@@ -61,8 +69,8 @@ void PrintSourceReport(std::ostream& out, const smo::Simulator& simulator) {
   const auto& sources = simulator.source_statistics();
   for (std::size_t i = 0; i < sources.size(); ++i) {
     const auto& source = sources[i];
-    auto buffer_time = source.AverageBufferTime();
-    auto device_time = source.AverageDeviceTime();
+    auto buffer_time = source.AverageBufferTime().count();
+    auto device_time = source.AverageDeviceTime().count();
     table.add_row(tabulate::RowStream{}
                   << i << source.generated
                   << static_cast<double>(source.generated) / source.rejected
@@ -167,4 +175,11 @@ void PrintRealBuffer(std::ostream& out, const smo::Simulator& simulator) {
     table.add_row(value_row);
   }
   out << table;
+}
+
+double CalculateNextTargetAmountOfRequests(double rejection_probability) {
+  const double t_a = 1.643;
+  const double delta = 0.1;
+  const double p = rejection_probability;
+  return (t_a * t_a * (1 - p)) / (p * delta * delta);
 }
