@@ -1,12 +1,13 @@
 #ifndef SIMULATOR_H_
 #define SIMULATOR_H_
+#include <cstddef>
 #include <deque>
 #include <random>
 #include <vector>
 
-#include "simulator_base.h"
+#include "../simulator_base.h"
+#include "../smo_components.h"
 #include "simulator_config.h"
-#include "smo_components.h"
 
 namespace smo {
 class Simulator final : public smo::SimulatorBase {

@@ -1,20 +1,24 @@
 #include <algorithm>
 #include <cstddef>
 #include <deque>
+#include <functional>
 #include <iostream>
+#include <map>
 #include <optional>
 #include <ostream>
 #include <string>
 #include <tabulate/table.hpp>
 #include <vector>
 
+#include "../smo_components.h"
 #include "arguments_parser.h"
 #include "return_codes.h"
 #include "simulator.h"
 #include "simulator_config.h"
-#include "smo_components.h"
 
 void PrintUsage(std::ostream& out);
+void PrintHelp(std::ostream& out);
+void PrintEvent(std::ostream& out, const smo::SpecialEvent& event);
 void PrintReport(std::ostream& out, const smo::Simulator& simulator);
 void PrintSourceCalendar(std::ostream& out, const smo::Simulator& simulator);
 void PrintDeviceCalendar(std::ostream& out, const smo::Simulator& simulator);
@@ -31,7 +35,10 @@ int main(int argc, char** argv) {
   }
   smo::SimulatorConfig config;
   std::cin >> config;
-  if (!std::cin) {
+  if (!std::cin || config.buffer_capacity < 0 ||
+      config.device_distributions.size() == 0 ||
+      config.source_periods.size() == 0 ||
+      config.target_amount_of_requests <= 0) {
     return codes::configError;
   }
   smo::Simulator simulator(std::move(config));
@@ -39,14 +46,45 @@ int main(int argc, char** argv) {
     case parse::SimulationMode::runToCompletion:
       simulator.RunToCompletion();
       break;
-    case parse::SimulationMode::interactive:
+    case parse::SimulationMode::interactive: {
+      std::string command;
+      std::map<std::string, std::function<void()>> comand_handlers{
+          {"",
+           [&] {
+             auto event = simulator.Step();
+             PrintEvent(std::cout, event);
+           }},
+          {"q", [&] {}},
+          {"s", [&] { PrintSourceCalendar(std::cout, simulator); }},
+          {"d", [&] { PrintDeviceCalendar(std::cout, simulator); }},
+          {"b", [&] { PrintFakeBuffer(std::cout, simulator); }},
+          {"p", [&] { PrintRealBuffer(std::cout, simulator); }},
+          {"h", [&] { PrintHelp(std::cout); }}};
+      while (!(command == "q" || simulator.is_completed())) {
+        std::getline(std::cin, command);
+        auto handler = comand_handlers.find(command);
+        if (handler == comand_handlers.end()) {
+          std::cout << "Incorrect command. Try \"h\" for a full list of"
+                       "available commands\n";
+        } else {
+          handler->second();
+        }
+      }
       break;
+    }
     case parse::SimulationMode::automatic: {
       auto target_amount_of_requests = 0;
       while (target_amount_of_requests !=
              simulator.target_amount_of_requests()) {
+        simulator.ResetWithNewAmountOfRequests(target_amount_of_requests);
         simulator.RunToCompletion();
+        target_amount_of_requests = CalculateNextTargetAmountOfRequests(
+            static_cast<double>(simulator.rejected_amount()) /
+            simulator.target_amount_of_requests());
       }
+      std::cout << "Calculated amount of requests: "
+                << target_amount_of_requests << '\n';
+      break;
     }
   }
   if (args.need_output) {
@@ -59,6 +97,30 @@ int main(int argc, char** argv) {
 }
 void PrintUsage(std::ostream& out) {
   out << "Usage: simulator [-i|-a|-r] [-o [outfile]] infile\n";
+}
+
+void PrintHelp(std::ostream& out) {
+  out << "Interactive mode comands:\n";
+  out << "\"\" - Simulation step\n";
+  out << "\"q\" - Quit\n";
+  out << "\"s\" - Print source calendar\n";
+  out << "\"d\" - Print device calendar\n";
+  out << "\"b\" - Print buffer\n";
+  out << "\"p\" - Print packets in buffer\n";
+  out << "\"h\" - Print help\n";
+}
+
+void PrintEvent(std::ostream& out, const smo::SpecialEvent& event) {
+  out << "Time: " << event.planned_time.count();
+  switch (event.kind) {
+    case smo::SpecialEventKind::generateNewRequest:
+      out << "Source " << event.id << " made new request\n";
+    case smo::SpecialEventKind::deviceRelease:
+      out << "Device " << event.id << " is released\n";
+    case smo::SpecialEventKind::endOfSimulation:
+      out << "Simulation ended\n";
+      break;
+  }
 }
 
 void PrintSourceReport(std::ostream& out, const smo::Simulator& simulator) {
