@@ -30,13 +30,15 @@ class Simulator final : public smo::SimulatorBase {
   smo::Time SourcePeriod(std::size_t source_id) override;
 
  private:
+  void Init();
+
   std::mt19937 random_gen_;
   std::vector<std::chrono::milliseconds> source_periods_;
   std::vector<std::exponential_distribution<>> device_distributions_;
   std::vector<std::deque<Request>> storage_;
-  std::size_t buffer_capacity_;
-  std::size_t buffer_size_;
-  std::size_t current_packet_;
+  std::size_t buffer_capacity_ = 0;
+  std::size_t buffer_size_ = 0;
+  std::size_t current_packet_ = 0;
   std::vector<smo::DeviceStatistics>::const_iterator next_device_pointer_;
 };
 }  // namespace smo

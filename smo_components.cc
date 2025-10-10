@@ -2,9 +2,8 @@
 
 #include "smo_components.h"
 
-static smo::Time::rep CalculateVariance(smo::Time::rep squares,
-                                        smo::Time::rep average,
-                                        std::size_t amount) {
+static double CalculateVariance(double squares, double average,
+                                std::size_t amount) {
   return squares / amount - average * average;
 }
 smo::Time smo::SourceStatistics::AverageBufferTime() const {
@@ -13,11 +12,11 @@ smo::Time smo::SourceStatistics::AverageBufferTime() const {
 smo::Time smo::SourceStatistics::AverageDeviceTime() const {
   return time_in_device / (generated - rejected);
 }
-smo::Time::rep smo::SourceStatistics::BufferTimeVariance() const {
+double smo::SourceStatistics::BufferTimeVariance() const {
   return CalculateVariance(time_squared_in_buffer, AverageBufferTime().count(),
                            generated);
 }
-smo::Time::rep smo::SourceStatistics::DeviceTimeVariance() const {
+double smo::SourceStatistics::DeviceTimeVariance() const {
   return CalculateVariance(time_squared_in_device, AverageDeviceTime().count(),
                            generated - rejected);
 }

@@ -15,18 +15,18 @@ using Time = std::chrono::duration<double>;
 struct SourceStatistics {
   Time AverageBufferTime() const;
   Time AverageDeviceTime() const;
-  Time::rep BufferTimeVariance() const;
-  Time::rep DeviceTimeVariance() const;
+  double BufferTimeVariance() const;
+  double DeviceTimeVariance() const;
   void AddTimeInBuffer(Time time);
   void AddTimeInDevice(Time time);
 
-  std::size_t generated;
-  std::size_t rejected;
-  Time next_request;
-  Time time_in_buffer;
-  Time time_in_device;
-  Time::rep time_squared_in_buffer;
-  Time::rep time_squared_in_device;
+  std::size_t generated{0};
+  std::size_t rejected{0};
+  Time next_request{0};
+  Time time_in_buffer{0};
+  Time time_in_device{0};
+  double time_squared_in_buffer{0};
+  double time_squared_in_device{0};
 };
 struct Request {
   std::size_t source_id;
@@ -34,8 +34,8 @@ struct Request {
   Time generation_time;
 };
 struct DeviceStatistics {
-  Time next_request;
-  Time time_in_usage;
+  Time next_request{Time::max()};
+  Time time_in_usage{0};
   std::optional<Request> current_request;
 };
 enum class SpecialEventKind {

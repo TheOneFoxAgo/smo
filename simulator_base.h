@@ -21,10 +21,12 @@ class SimulatorBase {
   SpecialEvent Step();
   void RunToCompletion();
   virtual void Reset();
-  virtual void Reset(std::size_t target_amount_of_requests);
+  virtual void ResetWithNewAmountOfRequests(
+      std::size_t target_amount_of_requests);
   bool is_completed() const;
   std::size_t current_amount_of_requests() const;
   std::size_t target_amount_of_requests() const;
+  std::size_t rejected_amount() const;
   Time current_simulation_time() const;
   const std::vector<SourceStatistics>& source_statistics() const;
   const std::vector<DeviceStatistics>& device_statistics() const;
@@ -46,9 +48,10 @@ class SimulatorBase {
   bool OccupyNextDevice(Request request);
   SpecialEvent UncheckedStep();
 
-  std::size_t current_amount_of_requests_;
-  std::size_t target_amount_of_requests_;
-  Time current_simulation_time_;
+  std::size_t current_amount_of_requests_{0};
+  std::size_t target_amount_of_requests_{0};
+  std::size_t rejected_amount_{0};
+  Time current_simulation_time_{0};
   special_event_queue special_events_;
   std::vector<SourceStatistics> sources_;
   std::vector<DeviceStatistics> devices_;

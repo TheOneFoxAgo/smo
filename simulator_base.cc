@@ -1,5 +1,6 @@
 #include <bits/chrono.h>
 
+#include <cassert>
 #include <chrono>
 #include <cstddef>
 #include <optional>
@@ -14,7 +15,8 @@ smo::SimulatorBase::SimulatorBase(std::size_t sources_amount,
     : sources_(std::vector<SourceStatistics>(sources_amount)),
       devices_(std::vector<DeviceStatistics>(devices_amount)),
       current_amount_of_requests_(0),
-      target_amount_of_requests_(target_amount_of_requests) {}
+      target_amount_of_requests_(target_amount_of_requests),
+      rejected_amount_(0) {}
 // If simulation is completed, UB is triggered
 smo::SpecialEvent smo::SimulatorBase::UncheckedStep() {
   SpecialEvent current_event = special_events_.top();
@@ -77,15 +79,18 @@ void smo::SimulatorBase::Reset() {
     s.time_squared_in_buffer = 0;
   }
   for (auto& d : devices_) {
+    d.next_request = Time::max();
     d.current_request = std::nullopt;
     d.time_in_usage = Time(0);
   }
   special_events_.clear();
   current_amount_of_requests_ = 0;
+  rejected_amount_ = 0;
   current_simulation_time_ = Time(0);
 }
 
-void smo::SimulatorBase::Reset(std::size_t target_amount_of_requests) {
+void smo::SimulatorBase::ResetWithNewAmountOfRequests(
+    std::size_t target_amount_of_requests) {
   Reset();
   target_amount_of_requests_ = target_amount_of_requests;
 }
@@ -99,6 +104,9 @@ std::size_t smo::SimulatorBase::current_amount_of_requests() const {
 }
 std::size_t smo::SimulatorBase::target_amount_of_requests() const {
   return target_amount_of_requests_;
+}
+std::size_t smo::SimulatorBase::rejected_amount() const {
+  return rejected_amount_;
 }
 smo::Time smo::SimulatorBase::current_simulation_time() const {
   return current_simulation_time_;
@@ -147,6 +155,7 @@ void smo::SimulatorBase::HandleBufferOverflow(const smo::Request& request) {
   auto& source = sources_[request.source_id];
   source.AddTimeInBuffer(time);
   source.rejected += 1;
+  rejected_amount_ += 1;
 }
 
 void smo::SimulatorBase::HandleDeviceRelease(std::size_t device_id) {
@@ -168,6 +177,7 @@ bool smo::SimulatorBase::OccupyNextDevice(smo::Request request) {
     auto processing_time = DeviceProcessingTime(*device_id, request);
     sources_[request.source_id].AddTimeInDevice(processing_time);
     device.current_request = request;
+    device.time_in_usage += processing_time;
     AddSpecialEvent(SpecialEvent{
         SpecialEventKind::deviceRelease,
         current_simulation_time_ + processing_time,

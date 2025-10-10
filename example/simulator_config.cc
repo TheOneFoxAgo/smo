@@ -20,20 +20,24 @@ std::istream &smo::operator>>(std::istream &in, SimulatorConfig &config) {
       {"Buffer:", [&] { in >> config.buffer_capacity; }},
       {"Sources:",
        [&] {
+         std::size_t result = 0;
+         in >> result;
          while (in) {
-           std::size_t result = 0;
-           in >> result;
            config.source_periods.push_back(std::chrono::milliseconds(result));
+           in >> result;
          }
+         in.clear();
        }},
       {"Devices:",
        [&] {
+         double result = 0.0;
+         in >> result;
          while (in) {
-           double result = 0.0;
-           in >> result;
            config.device_distributions.push_back(
                std::exponential_distribution<>(result));
+           in >> result;
          }
+         in.clear();
        }},
   };
   std::size_t remaining = 0;

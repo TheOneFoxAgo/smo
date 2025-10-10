@@ -7,6 +7,7 @@ enum Result {
   invalidArguments = 1,
   outputFileError = 2,
   configError = 3,
+  incorrectGuess = 4,
 };
 }
 
