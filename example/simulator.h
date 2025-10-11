@@ -12,8 +12,8 @@
 namespace smo {
 class Simulator final : public smo::SimulatorBase {
  public:
-  Simulator(std::vector<std::chrono::milliseconds> source_periods,
-            std::vector<std::exponential_distribution<>> device_distributions,
+  Simulator(std::vector<smo::Time> source_periods,
+            std::vector<double> device_coefficients,
             std::size_t buffer_capacity, std::size_t target_amount_of_requests);
   Simulator(SimulatorConfig config);
 
@@ -33,8 +33,9 @@ class Simulator final : public smo::SimulatorBase {
   void Init();
 
   std::mt19937 random_gen_;
-  std::vector<std::chrono::milliseconds> source_periods_;
-  std::vector<std::exponential_distribution<>> device_distributions_;
+  std::exponential_distribution<> distribution_{1.0};
+  std::vector<smo::Time> source_periods_;
+  std::vector<double> device_coefficients_;
   std::vector<std::deque<Request>> storage_;
   std::size_t buffer_capacity_ = 0;
   std::size_t buffer_size_ = 0;

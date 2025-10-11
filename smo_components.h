@@ -5,28 +5,30 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <optional>
 #include <queue>
 #include <string>
 #include <vector>
 
 namespace smo {
-using Time = std::chrono::duration<double>;
+using Time = std::uint64_t;
+constexpr Time maxTime = std::numeric_limits<Time>::max();
 struct SourceStatistics {
-  Time AverageBufferTime() const;
-  Time AverageDeviceTime() const;
+  double AverageBufferTime() const;
+  double AverageDeviceTime() const;
   double BufferTimeVariance() const;
   double DeviceTimeVariance() const;
   void AddTimeInBuffer(Time time);
   void AddTimeInDevice(Time time);
 
-  std::size_t generated{0};
-  std::size_t rejected{0};
-  Time next_request{0};
-  Time time_in_buffer{0};
-  Time time_in_device{0};
-  double time_squared_in_buffer{0};
-  double time_squared_in_device{0};
+  std::size_t generated = 0;
+  std::size_t rejected = 0;
+  Time next_request = 0;
+  Time time_in_buffer = 0;
+  Time time_in_device = 0;
+  double time_squared_in_buffer = 0;
+  double time_squared_in_device = 0;
 };
 struct Request {
   std::size_t source_id;
@@ -34,8 +36,8 @@ struct Request {
   Time generation_time;
 };
 struct DeviceStatistics {
-  Time next_request{Time::max()};
-  Time time_in_usage{0};
+  Time next_request = maxTime;
+  Time time_in_usage = 0;
   std::optional<Request> current_request;
 };
 enum class SpecialEventKind {

@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
   smo::SimulatorConfig config;
   args.input_file >> config;
   if (!std::cin || config.buffer_capacity < 0 ||
-      config.device_distributions.size() == 0 ||
+      config.device_coefficients.size() == 0 ||
       config.source_periods.size() == 0 ||
       config.target_amount_of_requests <= 0) {
     return codes::configError;
@@ -73,19 +73,26 @@ int main(int argc, char** argv) {
         std::size_t current_requests = simulator.target_amount_of_requests();
         current_rejection =
             static_cast<double>(simulator.rejected_amount()) / current_requests;
+        if (current_rejection < 1.0 / args.max_requests) {
+          std::cout << "Can't estimate requests amount, because rejection "
+                       "probability is too small: "
+                    << current_rejection << '\n';
+          break;
+        }
         next_requests = CalculateNextTargetAmountOfRequests(current_rejection);
+        std::cout << "Rejection probability: " << current_rejection << '\n';
         if (next_requests > args.max_requests) {
           std::cerr << "Incorrect guess!" << '\n';
           return codes::incorrectGuess;
         }
         if (std::abs((current_rejection - prev_rejection) / prev_rejection) <
             0.1) {
+          std::cout << "Calculated amount of requests: "
+                    << static_cast<std::size_t>(next_requests) << '\n';
           break;
         }
         simulator.ResetWithNewAmountOfRequests(next_requests);
       }
-      std::cout << "Calculated amount of requests: "
-                << static_cast<std::size_t>(next_requests) << '\n';
       break;
     }
   }

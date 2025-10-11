@@ -19,7 +19,7 @@ void smo::PrintHelp(std::ostream& out) {
 }
 
 void smo::PrintEvent(std::ostream& out, const smo::SpecialEvent& event) {
-  out << "Time: " << event.planned_time.count() << ' ';
+  out << "Time: " << event.planned_time << ' ';
   switch (event.kind) {
     case smo::SpecialEventKind::generateNewRequest:
       out << "Source " << event.id << " made new request\n";
@@ -42,8 +42,8 @@ void smo::PrintSourceReport(std::ostream& out,
   const auto& sources = simulator.source_statistics();
   for (std::size_t i = 0; i < sources.size(); ++i) {
     const auto& source = sources[i];
-    auto buffer_time = source.AverageBufferTime().count();
-    auto device_time = source.AverageDeviceTime().count();
+    auto buffer_time = source.AverageBufferTime();
+    auto device_time = source.AverageDeviceTime();
     table.add_row(tabulate::RowStream{}
                   << i << source.generated
                   << static_cast<double>(source.rejected) / source.generated
@@ -61,14 +61,14 @@ void smo::PrintDeviceReport(std::ostream& out,
   for (std::size_t i = 0; i < devices.size(); ++i) {
     const auto& device = devices[i];
     table.add_row({std::to_string(i),
-                   std::to_string(device.time_in_usage /
+                   std::to_string(static_cast<double>(device.time_in_usage) /
                                   simulator.current_simulation_time())});
   }
   out << table << '\n';
 }
 void smo::PrintReport(std::ostream& out, const smo::Simulator& simulator) {
-  out << "Total simulation time: "
-      << simulator.current_simulation_time().count() << '\n';
+  out << "Total simulation time: " << simulator.current_simulation_time()
+      << '\n';
   out << "Sources:\n";
   PrintSourceReport(out, simulator);
   out << "Devices:\n";
@@ -82,8 +82,8 @@ void smo::PrintSourceCalendar(std::ostream& out,
   for (std::size_t i = 0; i < sources.size(); ++i) {
     const auto& source = sources[i];
     table.add_row(tabulate::RowStream{}
-                  << i << source.next_request.count()
-                  << (source.next_request == smo::Time::max() ? 1 : 0));
+                  << i << source.next_request
+                  << (source.next_request == smo::maxTime ? 1 : 0));
   }
   out << table << '\n';
 }
@@ -102,8 +102,8 @@ void smo::PrintDeviceCalendar(std::ostream& out,
   for (std::size_t i = 0; i < devices.size(); ++i) {
     const auto& device = devices[i];
     table.add_row(tabulate::RowStream{}
-                  << i << device.next_request.count()
-                  << (device.next_request == smo::Time::max() ? 1 : 0)
+                  << i << device.next_request
+                  << (device.next_request == smo::maxTime ? 1 : 0)
                   << FormatRequest(device.current_request));
   }
   out << table << '\n';
@@ -131,7 +131,6 @@ void smo::PrintFakeBuffer(std::ostream& out, const smo::Simulator& simulator) {
 }
 void smo::PrintRealBuffer(std::ostream& out, const smo::Simulator& simulator) {
   const auto& real_buffer = simulator.RealBuffer();
-  using Subbuffer = std::deque<smo::Request>;
   std::size_t max_size = 0;
   for (const auto& subbuffer : real_buffer) {
     max_size = std::max(max_size, subbuffer.size());

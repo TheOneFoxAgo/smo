@@ -15,7 +15,7 @@ static void RemoveModeFlags(OptionalArgumentsMap& oam) {
 codes::Result parse::Arguments::Parse(int argc, char** argv) {
   auto result = codes::success;
   std::size_t last_argument_index = argc - 1;
-  std::size_t current_argument_index = 1;
+  int current_argument_index = 1;
   OptionalArgumentsMap optional_arguments;
   optional_arguments["-r"] = [&] {
     mode = SimulationMode::runToCompletion;

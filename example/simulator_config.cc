@@ -1,10 +1,9 @@
-#include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <ios>
 #include <istream>
 #include <map>
-#include <random>
 #include <string>
 #include <utility>
 
@@ -20,10 +19,10 @@ std::istream &smo::operator>>(std::istream &in, SimulatorConfig &config) {
       {"Buffer:", [&] { in >> config.buffer_capacity; }},
       {"Sources:",
        [&] {
-         std::size_t result = 0;
+         std::uint64_t result = 0;
          in >> result;
          while (in) {
-           config.source_periods.push_back(std::chrono::milliseconds(result));
+           config.source_periods.push_back(result);
            in >> result;
          }
          in.clear();
@@ -33,14 +32,12 @@ std::istream &smo::operator>>(std::istream &in, SimulatorConfig &config) {
          double result = 0.0;
          in >> result;
          while (in) {
-           config.device_distributions.push_back(
-               std::exponential_distribution<>(result));
+           config.device_coefficients.push_back(result);
            in >> result;
          }
          in.clear();
        }},
   };
-  std::size_t remaining = 0;
   std::string header;
   while (in && headers.size() != 0) {
     in >> header;

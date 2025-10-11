@@ -7,15 +7,15 @@
 
 #include "simulator.h"
 
-smo::Simulator::Simulator(
-    std::vector<std::chrono::milliseconds> source_periods,
-    std::vector<std::exponential_distribution<>> device_distributions,
-    std::size_t buffer_capacity, std::size_t target_amount_of_requests)
-    : smo::SimulatorBase{source_periods.size(), device_distributions.size(),
+smo::Simulator::Simulator(std::vector<smo::Time> source_periods,
+                          std::vector<double> device_coefficients,
+                          std::size_t buffer_capacity,
+                          std::size_t target_amount_of_requests)
+    : smo::SimulatorBase{source_periods.size(), device_coefficients.size(),
                          target_amount_of_requests},
       random_gen_(std::mt19937(std::random_device{}())),
       source_periods_(std::move(source_periods)),
-      device_distributions_(std::move(device_distributions)),
+      device_coefficients_(std::move(device_coefficients)),
       storage_(std::vector<std::deque<smo::Request>>(source_periods_.size())),
       buffer_capacity_(buffer_capacity) {
   next_device_pointer_ = device_statistics().begin();
@@ -23,7 +23,7 @@ smo::Simulator::Simulator(
 }
 smo::Simulator::Simulator(SimulatorConfig config)
     : smo::Simulator{std::move(config.source_periods),
-                     std::move(config.device_distributions),
+                     std::move(config.device_coefficients),
                      config.buffer_capacity, config.target_amount_of_requests} {
 }
 void smo::Simulator::Reset() {
@@ -126,7 +126,8 @@ std::optional<std::size_t> smo::Simulator::PickDevice() {
 }
 smo::Time smo::Simulator::DeviceProcessingTime(std::size_t device_id,
                                                const Request& request) {
-  return smo::Time(device_distributions_[device_id](random_gen_));
+  return smo::Time(device_coefficients_[device_id] *
+                   distribution_(random_gen_));
 }
 smo::Time smo::Simulator::SourcePeriod(std::size_t source_id) {
   return source_periods_[source_id];

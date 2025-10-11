@@ -1,7 +1,6 @@
 #include <bits/chrono.h>
 
 #include <cassert>
-#include <chrono>
 #include <cstddef>
 #include <optional>
 #include <vector>
@@ -51,24 +50,6 @@ void smo::SimulatorBase::RunToCompletion() {
   }
 }
 
-static smo::Time CalculateAverage(const std::vector<smo::Time>& times,
-                                  smo::Time::rep amount) {
-  smo::Time result{0};
-  for (auto& t : times) {
-    result += t;
-  }
-  return result / amount;
-}
-static smo::Time CalculateVariance(const std::vector<smo::Time>& times,
-                                   smo::Time average) {
-  smo::Time::rep result = 0;
-  for (auto& t : times) {
-    auto diff = (t - average).count();
-    result += diff * diff;
-  }
-  return smo::Time(result);
-}
-
 void smo::SimulatorBase::Reset() {
   for (auto& s : sources_) {
     s.generated = 0;
@@ -79,7 +60,7 @@ void smo::SimulatorBase::Reset() {
     s.time_squared_in_buffer = 0;
   }
   for (auto& d : devices_) {
-    d.next_request = Time::max();
+    d.next_request = maxTime;
     d.current_request = std::nullopt;
     d.time_in_usage = Time(0);
   }
@@ -139,7 +120,7 @@ void smo::SimulatorBase::HandleNewRequestCreation(std::size_t source_id) {
   if (current_amount_of_requests_ >= target_amount_of_requests_) {
     special_events_.remove_excess_generations();
     for (auto& source : sources_) {
-      source.next_request = Time::max();
+      source.next_request = maxTime;
     }
   } else {
     AddSpecialEvent(SpecialEvent{
@@ -167,7 +148,7 @@ void smo::SimulatorBase::HandleDeviceRelease(std::size_t device_id) {
     sources_[request->source_id].AddTimeInBuffer(time);
     OccupyNextDevice(*request);
   } else {
-    device.next_request = Time::max();
+    device.next_request = maxTime;
   }
 }
 bool smo::SimulatorBase::OccupyNextDevice(smo::Request request) {
