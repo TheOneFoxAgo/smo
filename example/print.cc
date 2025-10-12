@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <ostream>
 #include <tabulate/table.hpp>
 
@@ -19,7 +20,7 @@ void smo::PrintHelp(std::ostream& out) {
 }
 
 void smo::PrintEvent(std::ostream& out, const smo::SpecialEvent& event) {
-  out << "Time: " << event.planned_time << ' ';
+  out << "Time: " << event.planned_time << ". ";
   switch (event.kind) {
     case smo::SpecialEventKind::generateNewRequest:
       out << "Source " << event.id << " made new request\n";
@@ -32,7 +33,28 @@ void smo::PrintEvent(std::ostream& out, const smo::SpecialEvent& event) {
       break;
   }
 }
-
+void smo::PrintReport(std::ostream& out, const smo::Simulator& simulator) {
+  out << "Report:\n";
+  PrintGeneralReport(out, simulator);
+  out << "Sources:\n";
+  PrintSourceReport(out, simulator);
+  out << "Devices:\n";
+  PrintDeviceReport(out, simulator);
+}
+void smo::PrintGeneralReport(std::ostream& out,
+                             const smo::Simulator& simulator) {
+  tabulate::Table table;
+  table.add_row({"Total\nsimulation\ntime", "Requests\nrecieved",
+                 "Requests\nprocessed", "Requests\nrejected",
+                 "Rejection\nprobability"});
+  std::size_t recieved = simulator.current_amount_of_requests();
+  std::size_t rejected = simulator.rejected_amount();
+  table.add_row(tabulate::RowStream{}
+                << simulator.current_simulation_time() << recieved
+                << recieved - rejected << rejected
+                << static_cast<double>(rejected) / recieved);
+  out << table << '\n';
+}
 void smo::PrintSourceReport(std::ostream& out,
                             const smo::Simulator& simulator) {
   tabulate::Table table;
@@ -66,14 +88,6 @@ void smo::PrintDeviceReport(std::ostream& out,
   }
   out << table << '\n';
 }
-void smo::PrintReport(std::ostream& out, const smo::Simulator& simulator) {
-  out << "Total simulation time: " << simulator.current_simulation_time()
-      << '\n';
-  out << "Sources:\n";
-  PrintSourceReport(out, simulator);
-  out << "Devices:\n";
-  PrintDeviceReport(out, simulator);
-}
 void smo::PrintSourceCalendar(std::ostream& out,
                               const smo::Simulator& simulator) {
   tabulate::Table table;
@@ -81,9 +95,14 @@ void smo::PrintSourceCalendar(std::ostream& out,
   const auto& sources = simulator.source_statistics();
   for (std::size_t i = 0; i < sources.size(); ++i) {
     const auto& source = sources[i];
-    table.add_row(tabulate::RowStream{}
-                  << i << source.next_request
-                  << (source.next_request == smo::maxTime ? 1 : 0));
+    tabulate::RowStream row{};
+    row << i;
+    if (source.next_request != smo::maxTime) {
+      row << source.next_request << 0;
+    } else {
+      row << "" << 1;
+    }
+    table.add_row(row);
   }
   out << table << '\n';
 }
@@ -91,7 +110,7 @@ std::string FormatRequest(const std::optional<smo::Request>& req) {
   if (req.has_value()) {
     return std::to_string(req->source_id) + "." + std::to_string(req->number);
   } else {
-    return "None";
+    return "";
   }
 }
 void smo::PrintDeviceCalendar(std::ostream& out,
@@ -101,10 +120,16 @@ void smo::PrintDeviceCalendar(std::ostream& out,
   const auto& devices = simulator.device_statistics();
   for (std::size_t i = 0; i < devices.size(); ++i) {
     const auto& device = devices[i];
-    table.add_row(tabulate::RowStream{}
-                  << i << device.next_request
-                  << (device.next_request == smo::maxTime ? 1 : 0)
-                  << FormatRequest(device.current_request));
+    tabulate::RowStream row{};
+    row << i;
+    if (device.next_request != smo::maxTime) {
+      row << device.next_request << 0;
+
+    } else {
+      row << "" << 1;
+    }
+    row << FormatRequest(device.current_request);
+    table.add_row(row);
   }
   out << table << '\n';
 }

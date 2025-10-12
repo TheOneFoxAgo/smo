@@ -49,7 +49,11 @@ int main(int argc, char** argv) {
           {"d", [&] { smo::PrintDeviceCalendar(std::cout, simulator); }},
           {"b", [&] { smo::PrintFakeBuffer(std::cout, simulator); }},
           {"p", [&] { smo::PrintRealBuffer(std::cout, simulator); }},
-          {"h", [&] { smo::PrintHelp(std::cout); }}};
+          {"h", [&] { smo::PrintHelp(std::cout); }},
+          {"t", [&] {
+             std::cout << "Time: " << simulator.current_simulation_time()
+                       << ".\n";
+           }}};
       while (!(command == "q" || simulator.is_completed())) {
         std::getline(std::cin, command);
         auto handler = comand_handlers.find(command);

@@ -40,7 +40,11 @@ bool smo::SpecialEventComparator::operator()(const SpecialEvent& lhs,
       rhs.kind == SpecialEventKind::deviceRelease) {
     return lhs.planned_time >= rhs.planned_time;
   } else {
-    return lhs.planned_time > rhs.planned_time;
+    if (lhs.planned_time == rhs.planned_time) {
+      return lhs.id > rhs.id;
+    } else {
+      return lhs.planned_time > rhs.planned_time;
+    }
   }
 }
 
