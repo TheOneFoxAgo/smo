@@ -10,9 +10,11 @@
 smo::Simulator::Simulator(std::vector<smo::Time> source_periods,
                           std::vector<double> device_coefficients,
                           std::size_t buffer_capacity,
-                          std::size_t target_amount_of_requests)
+                          std::size_t target_amount_of_requests,
+                          SimulatorLaw law)
     : smo::SimulatorBase{source_periods.size(), device_coefficients.size(),
                          target_amount_of_requests},
+      law_(law),
       random_gen_(std::mt19937(std::random_device{}())),
       source_periods_(std::move(source_periods)),
       device_coefficients_(std::move(device_coefficients)),
@@ -21,11 +23,11 @@ smo::Simulator::Simulator(std::vector<smo::Time> source_periods,
   next_device_pointer_ = device_statistics().begin();
   Init();
 }
-smo::Simulator::Simulator(SimulatorConfig config)
+smo::Simulator::Simulator(SimulatorConfig config, SimulatorLaw law)
     : smo::Simulator{std::move(config.source_periods),
                      std::move(config.device_coefficients),
-                     config.buffer_capacity, config.target_amount_of_requests} {
-}
+                     config.buffer_capacity, config.target_amount_of_requests,
+                     law} {}
 void smo::Simulator::Reset() {
   smo::SimulatorBase::Reset();
   for (auto& subbuffer : storage_) {
@@ -59,6 +61,8 @@ std::vector<smo::Request> smo::Simulator::FakeBuffer() const {
             });
   return result;
 }
+
+std::size_t smo::Simulator::current_packet() const { return current_packet_; }
 
 const std::vector<std::deque<smo::Request>>& smo::Simulator::RealBuffer()
     const {
@@ -126,8 +130,12 @@ std::optional<std::size_t> smo::Simulator::PickDevice() {
 }
 smo::Time smo::Simulator::DeviceProcessingTime(std::size_t device_id,
                                                const Request& request) {
-  return smo::Time(device_coefficients_[device_id] *
-                   distribution_(random_gen_));
+  if (law_ == SimulatorLaw::deterministic) {
+    return smo::Time(device_coefficients_[device_id]);
+  } else {
+    return smo::Time(device_coefficients_[device_id] *
+                     distribution_(random_gen_));
+  }
 }
 smo::Time smo::Simulator::SourcePeriod(std::size_t source_id) {
   return source_periods_[source_id];

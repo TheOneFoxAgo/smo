@@ -5,10 +5,11 @@
 
 #include "arguments_parser.h"
 #include "return_codes.h"
+#include "simulator.h"
 
 using OptionalArgumentsMap = std::map<std::string, std::function<void()>>;
 static void RemoveModeFlags(OptionalArgumentsMap& oam) {
-  for (auto&& flag : {"-i", "-r", "-a"}) {
+  for (auto&& flag : {"-i", "-a"}) {
     oam.erase(flag);
   }
 }
@@ -17,10 +18,6 @@ codes::Result parse::Arguments::Parse(int argc, char** argv) {
   std::size_t last_argument_index = argc - 1;
   int current_argument_index = 1;
   OptionalArgumentsMap optional_arguments;
-  optional_arguments["-r"] = [&] {
-    mode = SimulationMode::runToCompletion;
-    RemoveModeFlags(optional_arguments);
-  };
   optional_arguments["-i"] = [&] {
     mode = SimulationMode::interactive;
     RemoveModeFlags(optional_arguments);
@@ -28,6 +25,10 @@ codes::Result parse::Arguments::Parse(int argc, char** argv) {
   optional_arguments["-a"] = [&] {
     mode = SimulationMode::automatic;
     RemoveModeFlags(optional_arguments);
+  };
+  optional_arguments["-d"] = [&] {
+    law = smo::SimulatorLaw::deterministic;
+    optional_arguments.erase("-d");
   };
   optional_arguments["-o"] = [&] {
     need_output = true;

@@ -10,16 +10,19 @@
 #include "simulator_config.h"
 
 namespace smo {
+enum class SimulatorLaw { stochastic, deterministic };
 class Simulator final : public smo::SimulatorBase {
  public:
   Simulator(std::vector<smo::Time> source_periods,
             std::vector<double> device_coefficients,
-            std::size_t buffer_capacity, std::size_t target_amount_of_requests);
-  Simulator(SimulatorConfig config);
+            std::size_t buffer_capacity, std::size_t target_amount_of_requests,
+            SimulatorLaw law);
+  Simulator(SimulatorConfig config, SimulatorLaw law);
 
   void Reset() override;
   std::vector<smo::Request> FakeBuffer() const;
   const std::vector<std::deque<Request>>& RealBuffer() const;
+  std::size_t current_packet() const;
 
  protected:
   std::optional<Request> PutInBuffer(Request request) override;
@@ -32,6 +35,7 @@ class Simulator final : public smo::SimulatorBase {
  private:
   void Init();
 
+  SimulatorLaw law_;
   std::mt19937 random_gen_;
   std::exponential_distribution<> distribution_{1.0};
   std::vector<smo::Time> source_periods_;

@@ -30,30 +30,26 @@ int main(int argc, char** argv) {
       config.target_amount_of_requests <= 0) {
     return codes::configError;
   }
-  smo::Simulator simulator(std::move(config));
+  smo::Simulator simulator(std::move(config), args.law);
   switch (args.mode) {
     case parse::SimulationMode::runToCompletion:
       simulator.RunToCompletion();
       break;
     case parse::SimulationMode::interactive: {
-      std::cout << "Interactive mode. Input h to get help" << '\n';
+      std::cout << "Interactive mode. Input h to get help\n\n";
+      smo::PrintSimulationState(std::cout, simulator);
       std::string command;
       std::map<std::string, std::function<void()>> comand_handlers{
           {"",
            [&] {
              auto event = simulator.Step();
-             PrintEvent(std::cout, event);
+             smo::PrintEvent(std::cout, event);
+             smo::PrintSimulationState(std::cout, simulator);
            }},
           {"q", [&] { simulator.RunToCompletion(); }},
-          {"s", [&] { smo::PrintSourceCalendar(std::cout, simulator); }},
-          {"d", [&] { smo::PrintDeviceCalendar(std::cout, simulator); }},
-          {"b", [&] { smo::PrintFakeBuffer(std::cout, simulator); }},
           {"p", [&] { smo::PrintRealBuffer(std::cout, simulator); }},
           {"h", [&] { smo::PrintHelp(std::cout); }},
-          {"t", [&] {
-             std::cout << "Time: " << simulator.current_simulation_time()
-                       << ".\n";
-           }}};
+      };
       while (!(command == "q" || simulator.is_completed())) {
         std::getline(std::cin, command);
         auto handler = comand_handlers.find(command);

@@ -9,6 +9,7 @@
 #include <optional>
 
 #include "return_codes.h"
+#include "simulator.h"
 namespace parse {
 enum class SimulationMode {
   runToCompletion,
@@ -19,6 +20,7 @@ struct Arguments {
   codes::Result Parse(int argc, char** argv);
   std::size_t max_requests = 1'000'000;
   SimulationMode mode = SimulationMode::runToCompletion;
+  smo::SimulatorLaw law = smo::SimulatorLaw::stochastic;
   bool need_output = false;
   std::optional<std::ofstream> report_file;
   std::ifstream input_file;
