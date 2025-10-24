@@ -93,7 +93,10 @@ void smo::PrintRealBuffer(std::ostream& out, const smo::Simulator& simulator) {
   }
   std::size_t current_packet = simulator.current_packet();
   if (!simulator.RealBuffer()[current_packet].empty()) {
-    table[current_packet + 1][0].format().font_style(highlight);
+    auto& current_packet_row = table[current_packet + 1];
+    for (std::size_t i = 1; i < current_packet_row.size(); ++i) {
+      current_packet_row[i].format().font_style(highlight);
+    }
   }
   out << table << '\n';
 }
