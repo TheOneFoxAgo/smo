@@ -10,7 +10,7 @@ double smo::SourceStatistics::AverageBufferTime() const {
   return static_cast<double>(time_in_buffer) / generated;
 }
 double smo::SourceStatistics::AverageDeviceTime() const {
-  return static_cast<double>(time_in_device) / (generated - rejected);
+  return static_cast<double>(time_in_device) / (generated);
 }
 double smo::SourceStatistics::BufferTimeVariance() const {
   return CalculateVariance(time_squared_in_buffer, AverageBufferTime(),
@@ -18,7 +18,7 @@ double smo::SourceStatistics::BufferTimeVariance() const {
 }
 double smo::SourceStatistics::DeviceTimeVariance() const {
   return CalculateVariance(time_squared_in_device, AverageDeviceTime(),
-                           generated - rejected);
+                           generated);
 }
 void smo::SourceStatistics::AddTimeInBuffer(smo::Time time) {
   time_in_buffer += time;
@@ -30,22 +30,13 @@ void smo::SourceStatistics::AddTimeInDevice(smo::Time time) {
 }
 bool smo::SpecialEventComparator::operator()(const SpecialEvent& lhs,
                                              const SpecialEvent& rhs) const {
-  if (lhs.kind == SpecialEventKind::endOfSimulation) {
-    return true;
+  if (lhs.planned_time != rhs.planned_time) {
+    return lhs.planned_time > rhs.planned_time;
   }
-  if (rhs.kind == SpecialEventKind::endOfSimulation) {
-    return false;
+  if (lhs.kind != rhs.kind) {
+    return lhs.kind > rhs.kind;
   }
-  if (lhs.kind == SpecialEventKind::generateNewRequest &&
-      rhs.kind == SpecialEventKind::deviceRelease) {
-    return lhs.planned_time >= rhs.planned_time;
-  } else {
-    if (lhs.planned_time == rhs.planned_time) {
-      return lhs.id > rhs.id;
-    } else {
-      return lhs.planned_time > rhs.planned_time;
-    }
-  }
+  return lhs.id > rhs.id;
 }
 
 void smo::special_event_queue::clear() { this->c.clear(); }

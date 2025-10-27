@@ -41,9 +41,9 @@ struct DeviceStatistics {
   std::optional<Request> current_request;
 };
 enum class SpecialEventKind {
-  generateNewRequest,
-  deviceRelease,
-  endOfSimulation
+  endOfSimulation = 0,
+  generateNewRequest = 1,
+  deviceRelease = 2,
 };
 struct SpecialEvent {
   SpecialEventKind kind;

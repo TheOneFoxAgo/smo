@@ -101,12 +101,12 @@ smo::SimulatorBase::device_statistics() const {
 
 void smo::SimulatorBase::HandleNewRequestCreation(std::size_t source_id) {
   auto& source = sources_[source_id];
-  source.generated += 1;
   Request request{
       source_id,
       source.generated,
       current_simulation_time_,
   };
+  source.generated += 1;
   current_amount_of_requests_ += 1;
   if (!OccupyNextDevice(request)) {
     auto rejected_request = PutInBuffer(request);
